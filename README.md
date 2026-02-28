@@ -1,8 +1,19 @@
 # Clawdroid
 
-Platform License Status GitHub Issues GitHub Stars
+<div align="center">
 
-Google Play X (Twitter) Follow Website
+[![Platform](https://img.shields.io/badge/platform-Android-brightgreen.svg)](https://www.android.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-experimental-orange.svg)](#)
+[![GitHub Issues](https://img.shields.io/github/issues/clawdroidltd/clawdroid-main.svg)](https://github.com/clawdroidltd/clawdroid-main/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/clawdroidltd/clawdroid-main.svg)](https://github.com/clawdroidltd/clawdroid-main/stargazers)
+
+[![Google Play](https://img.shields.io/badge/Google%20Play-Install-green?logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.clawdroid&pcampaignid=web_share)
+[![X (Twitter)](https://img.shields.io/badge/follow-%40clawdroid-1DA1F2?logo=x&logoColor=white)](https://x.com/clawdroid)
+[![Website](https://img.shields.io/badge/website-clawdroid.pro-blue?logo=google-chrome&logoColor=white)](https://clawdroid.pro/)
+[![Pump.fun](https://img.shields.io/badge/Pump.fun-CLAWDROID-7c3aed?logo=ethereum&logoColor=white)](https://pump.fun/coin/tUuNb7nVckAyBTMctNMc7UAynBzJfmft9z1ycdupump)
+
+</div>
 
 ---
 
