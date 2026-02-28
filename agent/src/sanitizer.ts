@@ -1,8 +1,7 @@
 /**
- * XML sanitizer for the Clawdroid phone agent.
- * Parses Android Accessibility XML and extracts interactive UI elements
- * with full state information and parent-child hierarchy context.
- * Element scoring uses Clawdroid weights (focus on actionable elements).
+ * Clawdroid accessibility tree parser.
+ * Consumes Android UI hierarchy XML and yields interactive nodes with bounds, state, and suggested action.
+ * Relevance scoring uses Clawdroid weights; compact output is used for LLM context.
  */
 
 import { XMLParser } from "fast-xml-parser";
@@ -29,20 +28,33 @@ export interface UIElement {
   depth: number;
 }
 
-/**
- * Compute a hash of element texts/ids for screen state comparison.
- */
-export function computeScreenHash(elements: UIElement[]): string {
-  const parts = elements.map(
-    (e) => `${e.id}|${e.text}|${e.center[0]},${e.center[1]}|${e.enabled}|${e.checked}`
-  );
-  return parts.join(";");
+const TOLERANCE_PX = 5;
+
+function parseBounds(boundsStr: string): { center: [number, number]; size: [number, number] } | null {
+  const parts = boundsStr.replace("][", ",").replace("[", "").replace("]", "").split(",").map(Number);
+  if (parts.length !== 4) return null;
+  const [x1, y1, x2, y2] = parts;
+  const w = x2 - x1;
+  const h = y2 - y1;
+  if (w <= 0 || h <= 0) return null;
+  return {
+    center: [Math.floor((x1 + x2) / 2), Math.floor((y1 + y2) / 2)],
+    size: [w, h],
+  };
 }
 
-/**
- * Parses Android Accessibility XML and returns a rich list of interactive elements.
- * Preserves state (enabled, checked, focused) and hierarchy context.
- */
+function nodeLabelFromAttrs(text: string, desc: string, resourceId: string, typeName: string): string {
+  return text || desc || (resourceId.split("/").pop() ?? "") || typeName;
+}
+
+/** Stable fingerprint of a node list for change detection. */
+export function computeScreenHash(elements: UIElement[]): string {
+  return elements
+    .map((e) => `${e.id}|${e.text}|${e.center[0]},${e.center[1]}|${e.enabled}|${e.checked}`)
+    .join(";");
+}
+
+/** Parse hierarchy XML and collect interactive nodes with state and hierarchy. */
 export function getInteractiveElements(xmlContent: string): UIElement[] {
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -50,140 +62,100 @@ export function getInteractiveElements(xmlContent: string): UIElement[] {
     allowBooleanAttributes: true,
   });
 
-  let parsed: unknown;
+  let root: unknown;
   try {
-    parsed = parser.parse(xmlContent);
+    root = parser.parse(xmlContent);
   } catch {
-    console.log("Warning: Error parsing XML. The screen might be loading.");
+    console.log("Warning: Accessibility XML parse failed; screen may still be loading.");
     return [];
   }
 
-  const elements: UIElement[] = [];
+  const out: UIElement[] = [];
 
-  function walk(node: any, parentLabel: string, depth: number): void {
-    if (!node || typeof node !== "object") return;
+  function visitNode(n: any, parentCtx: string, d: number): void {
+    if (!n || typeof n !== "object") return;
 
-    if (node["@_bounds"]) {
-      const isClickable = node["@_clickable"] === "true";
-      const isLongClickable = node["@_long-clickable"] === "true";
-      const isScrollable = node["@_scrollable"] === "true";
-      const isEnabled = node["@_enabled"] !== "false"; // default true
-      const isChecked = node["@_checked"] === "true";
-      const isFocused = node["@_focused"] === "true";
-      const isSelected = node["@_selected"] === "true";
-      const isPassword = node["@_password"] === "true";
-
-      const elementClass = node["@_class"] ?? "";
-      const isEditable =
-        elementClass.includes("EditText") ||
-        elementClass.includes("AutoCompleteTextView") ||
-        node["@_editable"] === "true";
-
-      const text: string = node["@_text"] ?? "";
-      const desc: string = node["@_content-desc"] ?? "";
-      const resourceId: string = node["@_resource-id"] ?? "";
-      const hint: string = node["@_hint"] ?? "";
-
-      // Build a label for this node to use as parent context for children
-      const typeName = elementClass.split(".").pop() ?? "";
-      const nodeLabel = text || desc || resourceId.split("/").pop() || typeName;
-
-      // Determine if this element should be included
-      const isInteractive = isClickable || isEditable || isLongClickable || isScrollable;
+    const rawBounds = n["@_bounds"];
+    if (rawBounds) {
+      const click = n["@_clickable"] === "true";
+      const longClick = n["@_long-clickable"] === "true";
+      const scroll = n["@_scrollable"] === "true";
+      const enabled = n["@_enabled"] !== "false";
+      const checked = n["@_checked"] === "true";
+      const focused = n["@_focused"] === "true";
+      const selected = n["@_selected"] === "true";
+      const pwd = n["@_password"] === "true";
+      const cls = (n["@_class"] ?? "") as string;
+      const editable =
+        cls.includes("EditText") ||
+        cls.includes("AutoCompleteTextView") ||
+        n["@_editable"] === "true";
+      const text = (n["@_text"] ?? "") as string;
+      const desc = (n["@_content-desc"] ?? "") as string;
+      const rid = (n["@_resource-id"] ?? "") as string;
+      const hint = (n["@_hint"] ?? "") as string;
+      const typeName = cls.split(".").pop() ?? "";
+      const label = nodeLabelFromAttrs(text, desc, rid, typeName);
+      const interactive = click || editable || longClick || scroll;
       const hasContent = !!(text || desc);
 
-      if (isInteractive || hasContent) {
-        const bounds: string = node["@_bounds"];
-        try {
-          const coords = bounds
-            .replace("][", ",")
-            .replace("[", "")
-            .replace("]", "")
-            .split(",")
-            .map(Number);
+      if (interactive || hasContent) {
+        const parsed = parseBounds(rawBounds);
+        if (parsed) {
+          let action: UIElement["action"];
+          if (editable) action = "type";
+          else if (longClick && !click) action = "longpress";
+          else if (scroll && !click) action = "scroll";
+          else if (click) action = "tap";
+          else action = "read";
 
-          const [x1, y1, x2, y2] = coords;
-          const centerX = Math.floor((x1 + x2) / 2);
-          const centerY = Math.floor((y1 + y2) / 2);
-          const width = x2 - x1;
-          const height = y2 - y1;
-
-          // Skip zero-size elements (invisible)
-          if (width <= 0 || height <= 0) {
-            // still walk children
-          } else {
-            let suggestedAction: UIElement["action"];
-            if (isEditable) suggestedAction = "type";
-            else if (isLongClickable && !isClickable) suggestedAction = "longpress";
-            else if (isScrollable && !isClickable) suggestedAction = "scroll";
-            else if (isClickable) suggestedAction = "tap";
-            else suggestedAction = "read";
-
-            elements.push({
-              id: resourceId,
-              text: text || desc,
-              type: typeName,
-              bounds,
-              center: [centerX, centerY],
-              size: [width, height],
-              clickable: isClickable,
-              editable: isEditable,
-              enabled: isEnabled,
-              checked: isChecked,
-              focused: isFocused,
-              selected: isSelected,
-              scrollable: isScrollable,
-              longClickable: isLongClickable,
-              password: isPassword,
-              hint: hint,
-              action: suggestedAction,
-              parent: parentLabel,
-              depth,
-            });
-          }
-        } catch {
-          // Skip malformed bounds
+          out.push({
+            id: rid,
+            text: text || desc,
+            type: typeName,
+            bounds: rawBounds,
+            center: parsed.center,
+            size: parsed.size,
+            clickable: click,
+            editable,
+            enabled,
+            checked,
+            focused,
+            selected,
+            scrollable: scroll,
+            longClickable: longClick,
+            password: pwd,
+            hint,
+            action,
+            parent: parentCtx,
+            depth: d,
+          });
         }
       }
-
-      // Recurse with updated parent label
-      walkChildren(node, nodeLabel, depth + 1);
+      visitChildren(n, label, d + 1);
       return;
     }
-
-    // No bounds on this node — just recurse
-    walkChildren(node, parentLabel, depth);
+    visitChildren(n, parentCtx, d);
   }
 
-  function walkChildren(node: any, parentLabel: string, depth: number): void {
-    if (node.node) {
-      const children = Array.isArray(node.node) ? node.node : [node.node];
-      for (const child of children) {
-        walk(child, parentLabel, depth);
-      }
+  function visitChildren(n: any, parentCtx: string, d: number): void {
+    if (n.node) {
+      const list = Array.isArray(n.node) ? n.node : [n.node];
+      for (const c of list) visitNode(c, parentCtx, d);
     }
-    if (node.hierarchy) {
-      walk(node.hierarchy, parentLabel, depth);
-    }
+    if (n.hierarchy) visitNode(n.hierarchy, parentCtx, d);
   }
 
-  walk(parsed, "root", 0);
-  return elements;
+  visitNode(root, "root", 0);
+  return out;
 }
 
-// ===========================================
-// Smart Element Filtering (Phase 2A)
-// ===========================================
+// --- Compact representation for LLM ---
 
-/**
- * Compact representation sent to the LLM — only essential fields.
- * Non-default flags are included conditionally to minimize tokens.
- */
 export interface CompactUIElement {
   text: string;
   center: [number, number];
   action: UIElement["action"];
-  // Only included when non-default
   enabled?: false;
   checked?: true;
   focused?: true;
@@ -192,68 +164,44 @@ export interface CompactUIElement {
   scrollable?: true;
 }
 
-/**
- * Strips a full UIElement to its compact form, omitting default-valued flags.
- */
+/** Reduce a full node to compact form; omit defaults to save tokens. */
 export function compactElement(el: UIElement): CompactUIElement {
-  const compact: CompactUIElement = {
-    text: el.text,
-    center: el.center,
-    action: el.action,
-  };
-  if (!el.enabled) compact.enabled = false;
-  if (el.checked) compact.checked = true;
-  if (el.focused) compact.focused = true;
-  if (el.hint) compact.hint = el.hint;
-  if (el.editable) compact.editable = true;
-  if (el.scrollable) compact.scrollable = true;
-  return compact;
+  const c: CompactUIElement = { text: el.text, center: el.center, action: el.action };
+  if (!el.enabled) c.enabled = false;
+  if (el.checked) c.checked = true;
+  if (el.focused) c.focused = true;
+  if (el.hint) c.hint = el.hint;
+  if (el.editable) c.editable = true;
+  if (el.scrollable) c.scrollable = true;
+  return c;
 }
 
-/** Clawdroid relevance weights: prefer enabled, actionable, and labeled elements. */
-const CLAWDROID_WEIGHTS = {
-  enabled: 10,
-  editable: 8,
-  focused: 6,
-  actionable: 5,
-  hasText: 3,
-} as const;
+const RELEVANCE = { enabled: 10, editable: 8, focused: 6, actionable: 5, hasText: 3 } as const;
 
-/**
- * Scores an element for relevance to the LLM (Clawdroid weighting).
- */
-function scoreElement(el: UIElement): number {
-  let score = 0;
-  if (el.enabled) score += CLAWDROID_WEIGHTS.enabled;
-  if (el.editable) score += CLAWDROID_WEIGHTS.editable;
-  if (el.focused) score += CLAWDROID_WEIGHTS.focused;
-  if (el.clickable || el.longClickable) score += CLAWDROID_WEIGHTS.actionable;
-  if (el.text) score += CLAWDROID_WEIGHTS.hasText;
-  return score;
+function relevanceScore(el: UIElement): number {
+  let s = 0;
+  if (el.enabled) s += RELEVANCE.enabled;
+  if (el.editable) s += RELEVANCE.editable;
+  if (el.focused) s += RELEVANCE.focused;
+  if (el.clickable || el.longClickable) s += RELEVANCE.actionable;
+  if (el.text) s += RELEVANCE.hasText;
+  return s;
 }
 
-/**
- * Deduplicates elements by center coordinates (within tolerance),
- * scores them, and returns the top N as compact elements.
- */
+/** Dedupe by center (within tolerance), rank by relevance, return top N as compact nodes. */
 export function filterElements(
   elements: UIElement[],
   limit: number
 ): CompactUIElement[] {
-  // Deduplicate by center coordinates (5px tolerance)
-  const seen = new Map<string, UIElement>();
+  const byCell = new Map<string, UIElement>();
   for (const el of elements) {
-    const bucketX = Math.round(el.center[0] / 5) * 5;
-    const bucketY = Math.round(el.center[1] / 5) * 5;
-    const key = `${bucketX},${bucketY}`;
-    const existing = seen.get(key);
-    if (!existing || scoreElement(el) > scoreElement(existing)) {
-      seen.set(key, el);
-    }
+    const gx = Math.round(el.center[0] / TOLERANCE_PX) * TOLERANCE_PX;
+    const gy = Math.round(el.center[1] / TOLERANCE_PX) * TOLERANCE_PX;
+    const k = `${gx},${gy}`;
+    const cur = byCell.get(k);
+    if (!cur || relevanceScore(el) > relevanceScore(cur)) byCell.set(k, el);
   }
-
-  // Score, sort descending, take top N
-  const deduped = Array.from(seen.values());
-  deduped.sort((a, b) => scoreElement(b) - scoreElement(a));
-  return deduped.slice(0, limit).map(compactElement);
+  const list = Array.from(byCell.values());
+  list.sort((a, b) => relevanceScore(b) - relevanceScore(a));
+  return list.slice(0, limit).map(compactElement);
 }

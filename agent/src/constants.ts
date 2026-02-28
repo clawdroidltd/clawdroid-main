@@ -1,48 +1,120 @@
 /**
- * Constants for the Clawdroid phone agent.
- * Centralized magic strings, URLs, and fixed values; resolution defaults align with Clawdroid target devices.
+ * Clawdroid agent constants: APIs, keycodes, screen defaults, models, paths.
+ * Sourced from clawdroid-runtime where applicable.
  */
 
 import { CLAWDROID_RUNTIME } from "./clawdroid-runtime.js";
 
-// ===========================================
-// API Endpoints
-// ===========================================
-export const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1";
-export const OLLAMA_API_BASE_URL = "http://localhost:11434/v1";
-
-// ===========================================
-// ADB Key Codes (Android InputEvent)
-// ===========================================
-export const KEYCODE_ENTER = "66";
-export const KEYCODE_HOME = "KEYCODE_HOME";
-export const KEYCODE_BACK = "KEYCODE_BACK";
-export const KEYCODE_DEL = "67";
-export const KEYCODE_FORWARD_DEL = "112";
-export const KEYCODE_MOVE_HOME = "122";
-export const KEYCODE_MOVE_END = "123";
-export const KEYCODE_MENU = "82";
-export const KEYCODE_TAB = "61";
-export const KEYCODE_ESCAPE = "111";
-export const KEYCODE_DPAD_UP = "19";
-export const KEYCODE_DPAD_DOWN = "20";
-export const KEYCODE_DPAD_LEFT = "21";
-export const KEYCODE_DPAD_RIGHT = "22";
-export const KEYCODE_VOLUME_UP = "24";
-export const KEYCODE_VOLUME_DOWN = "25";
-export const KEYCODE_POWER = "26";
-export const KEYCODE_PASTE = "279";
-
-// ===========================================
-// Default Screen Coordinates (for swipe actions)
-// Based on Clawdroid reference resolution (see clawdroid-runtime)
-// ===========================================
 const REF = CLAWDROID_RUNTIME.referenceResolution;
-export const SCREEN_CENTER_X = Math.floor(REF.width / 2);
-export const SCREEN_CENTER_Y = Math.floor(REF.height / 2);
 
-// Swipe coordinates: [start_x, start_y, end_x, end_y]
-// These are the fallback values for 1080x2400 screens
+export const ClawdroidAgentDefaults = {
+  api: {
+    groq: "https://api.groq.com/openai/v1",
+    ollama: "http://localhost:11434/v1",
+  },
+  adbKeycodes: {
+    enter: "66",
+    home: "KEYCODE_HOME",
+    back: "KEYCODE_BACK",
+    del: "67",
+    forwardDel: "112",
+    moveHome: "122",
+    moveEnd: "123",
+    menu: "82",
+    tab: "61",
+    escape: "111",
+    dpadUp: "19",
+    dpadDown: "20",
+    dpadLeft: "21",
+    dpadRight: "22",
+    volumeUp: "24",
+    volumeDown: "25",
+    power: "26",
+    paste: "279",
+  },
+  screen: {
+    centerX: Math.floor(REF.width / 2),
+    centerY: Math.floor(REF.height / 2),
+    swipeMs: String(CLAWDROID_RUNTIME.gestureDurationMs),
+    longPressMs: "1000",
+  },
+  models: {
+    groq: "llama-3.3-70b-versatile",
+    openai: "gpt-4o",
+    bedrock: "us.meta.llama3-3-70b-instruct-v1:0",
+    openrouter: "anthropic/claude-3.5-sonnet",
+    ollama: "llama3.2",
+  },
+  bedrockPrefixes: { anthropic: ["anthropic"], meta: ["meta", "llama"] },
+  paths: {
+    deviceDump: "/sdcard/window_dump.xml",
+    localDump: "window_dump.xml",
+    deviceScreenshot: "/sdcard/kernel_screenshot.png",
+    localScreenshot: "kernel_screenshot.png",
+  },
+  agent: {
+    maxSteps: 30,
+    stepDelay: 2.0,
+    maxRetries: 3,
+    stuckThreshold: 3,
+    visionEnabled: true,
+    maxElements: 40,
+    logDir: "logs",
+    visionMode: "fallback" as const,
+    maxHistorySteps: 10,
+    streamingEnabled: true,
+  },
+} as const;
+
+// Named exports for backward compatibility
+export const GROQ_API_BASE_URL = ClawdroidAgentDefaults.api.groq;
+export const OLLAMA_API_BASE_URL = ClawdroidAgentDefaults.api.ollama;
+export const KEYCODE_ENTER = ClawdroidAgentDefaults.adbKeycodes.enter;
+export const KEYCODE_HOME = ClawdroidAgentDefaults.adbKeycodes.home;
+export const KEYCODE_BACK = ClawdroidAgentDefaults.adbKeycodes.back;
+export const KEYCODE_DEL = ClawdroidAgentDefaults.adbKeycodes.del;
+export const KEYCODE_FORWARD_DEL = ClawdroidAgentDefaults.adbKeycodes.forwardDel;
+export const KEYCODE_MOVE_HOME = ClawdroidAgentDefaults.adbKeycodes.moveHome;
+export const KEYCODE_MOVE_END = ClawdroidAgentDefaults.adbKeycodes.moveEnd;
+export const KEYCODE_MENU = ClawdroidAgentDefaults.adbKeycodes.menu;
+export const KEYCODE_TAB = ClawdroidAgentDefaults.adbKeycodes.tab;
+export const KEYCODE_ESCAPE = ClawdroidAgentDefaults.adbKeycodes.escape;
+export const KEYCODE_DPAD_UP = ClawdroidAgentDefaults.adbKeycodes.dpadUp;
+export const KEYCODE_DPAD_DOWN = ClawdroidAgentDefaults.adbKeycodes.dpadDown;
+export const KEYCODE_DPAD_LEFT = ClawdroidAgentDefaults.adbKeycodes.dpadLeft;
+export const KEYCODE_DPAD_RIGHT = ClawdroidAgentDefaults.adbKeycodes.dpadRight;
+export const KEYCODE_VOLUME_UP = ClawdroidAgentDefaults.adbKeycodes.volumeUp;
+export const KEYCODE_VOLUME_DOWN = ClawdroidAgentDefaults.adbKeycodes.volumeDown;
+export const KEYCODE_POWER = ClawdroidAgentDefaults.adbKeycodes.power;
+export const KEYCODE_PASTE = ClawdroidAgentDefaults.adbKeycodes.paste;
+export const SCREEN_CENTER_X = ClawdroidAgentDefaults.screen.centerX;
+export const SCREEN_CENTER_Y = ClawdroidAgentDefaults.screen.centerY;
+export const SWIPE_DURATION_MS = ClawdroidAgentDefaults.screen.swipeMs;
+export const LONG_PRESS_DURATION_MS = ClawdroidAgentDefaults.screen.longPressMs;
+export const DEFAULT_GROQ_MODEL = ClawdroidAgentDefaults.models.groq;
+export const DEFAULT_OPENAI_MODEL = ClawdroidAgentDefaults.models.openai;
+export const DEFAULT_BEDROCK_MODEL = ClawdroidAgentDefaults.models.bedrock;
+export const DEFAULT_OPENROUTER_MODEL = ClawdroidAgentDefaults.models.openrouter;
+export const DEFAULT_OLLAMA_MODEL = ClawdroidAgentDefaults.models.ollama;
+export const BEDROCK_ANTHROPIC_MODELS = ClawdroidAgentDefaults.bedrockPrefixes.anthropic;
+export const BEDROCK_META_MODELS = ClawdroidAgentDefaults.bedrockPrefixes.meta;
+export const DEVICE_DUMP_PATH = ClawdroidAgentDefaults.paths.deviceDump;
+export const LOCAL_DUMP_PATH = ClawdroidAgentDefaults.paths.localDump;
+export const DEVICE_SCREENSHOT_PATH = ClawdroidAgentDefaults.paths.deviceScreenshot;
+export const LOCAL_SCREENSHOT_PATH = ClawdroidAgentDefaults.paths.localScreenshot;
+export const DEFAULT_MAX_STEPS = ClawdroidAgentDefaults.agent.maxSteps;
+export const DEFAULT_STEP_DELAY = ClawdroidAgentDefaults.agent.stepDelay;
+export const DEFAULT_MAX_RETRIES = ClawdroidAgentDefaults.agent.maxRetries;
+export const DEFAULT_STUCK_THRESHOLD = ClawdroidAgentDefaults.agent.stuckThreshold;
+export const DEFAULT_VISION_ENABLED = ClawdroidAgentDefaults.agent.visionEnabled;
+export const DEFAULT_MAX_ELEMENTS = ClawdroidAgentDefaults.agent.maxElements;
+export const DEFAULT_LOG_DIR = ClawdroidAgentDefaults.agent.logDir;
+export const DEFAULT_VISION_MODE = ClawdroidAgentDefaults.agent.visionMode;
+export const DEFAULT_MAX_HISTORY_STEPS = ClawdroidAgentDefaults.agent.maxHistorySteps;
+export const DEFAULT_STREAMING_ENABLED = ClawdroidAgentDefaults.agent.streamingEnabled;
+
+export type VisionMode = "off" | "fallback" | "always";
+
 export const SWIPE_COORDS: Record<string, [number, number, number, number]> = {
   up: [SCREEN_CENTER_X, 1500, SCREEN_CENTER_X, 500],
   down: [SCREEN_CENTER_X, 500, SCREEN_CENTER_X, 1500],
@@ -50,23 +122,17 @@ export const SWIPE_COORDS: Record<string, [number, number, number, number]> = {
   right: [200, SCREEN_CENTER_Y, 800, SCREEN_CENTER_Y],
 };
 
-/**
- * Derives swipe coordinates from actual screen dimensions using ratios
- * from the hardcoded 1080x2400 reference values.
- */
+/** Build swipe coordinate map for a given resolution (ratios from reference 1080×2400). */
 export function computeSwipeCoords(
   width: number,
   height: number
 ): Record<string, [number, number, number, number]> {
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
-  // Vertical swipe: from 62.5% to 20.8% of height (mirrors 1500→500 on 2400h)
   const vTop = Math.floor(height * 0.208);
   const vBottom = Math.floor(height * 0.625);
-  // Horizontal swipe: from 74% to 18.5% of width (mirrors 800→200 on 1080w)
   const hLeft = Math.floor(width * 0.185);
   const hRight = Math.floor(width * 0.741);
-
   return {
     up: [cx, vBottom, cx, vTop],
     down: [cx, vTop, cx, vBottom],
@@ -74,51 +140,3 @@ export function computeSwipeCoords(
     right: [hLeft, cy, hRight, cy],
   };
 }
-export const SWIPE_DURATION_MS = String(CLAWDROID_RUNTIME.gestureDurationMs);
-export const LONG_PRESS_DURATION_MS = "1000";
-
-// ===========================================
-// Default Models
-// ===========================================
-export const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
-export const DEFAULT_OPENAI_MODEL = "gpt-4o";
-export const DEFAULT_BEDROCK_MODEL = "us.meta.llama3-3-70b-instruct-v1:0";
-export const DEFAULT_OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet";
-export const DEFAULT_OLLAMA_MODEL = "llama3.2";
-
-// ===========================================
-// Bedrock Model Identifiers
-// ===========================================
-export const BEDROCK_ANTHROPIC_MODELS = ["anthropic"];
-export const BEDROCK_META_MODELS = ["meta", "llama"];
-
-// ===========================================
-// File Paths
-// ===========================================
-export const DEVICE_DUMP_PATH = "/sdcard/window_dump.xml";
-export const LOCAL_DUMP_PATH = "window_dump.xml";
-export const DEVICE_SCREENSHOT_PATH = "/sdcard/kernel_screenshot.png";
-export const LOCAL_SCREENSHOT_PATH = "kernel_screenshot.png";
-
-// ===========================================
-// Agent Defaults
-// ===========================================
-export const DEFAULT_MAX_STEPS = 30;
-export const DEFAULT_STEP_DELAY = 2.0;
-export const DEFAULT_MAX_RETRIES = 3;
-export const DEFAULT_STUCK_THRESHOLD = 3;
-export const DEFAULT_VISION_ENABLED = true;
-
-// Phase 2: Context Quality
-export const DEFAULT_MAX_ELEMENTS = 40;
-export const DEFAULT_LOG_DIR = "logs";
-
-// Phase 3: Vision Mode
-export type VisionMode = "off" | "fallback" | "always";
-export const DEFAULT_VISION_MODE: VisionMode = "fallback";
-
-// Phase 4: Multi-turn Memory
-export const DEFAULT_MAX_HISTORY_STEPS = 10;
-
-// Phase 5: Streaming
-export const DEFAULT_STREAMING_ENABLED = true;

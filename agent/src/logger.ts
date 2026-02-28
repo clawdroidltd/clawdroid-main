@@ -33,6 +33,7 @@ export interface StepLog {
 }
 
 export interface SessionSummary {
+  meta: { product: string; schemaVersion: number };
   sessionId: string;
   goal: string;
   provider: string;
@@ -46,7 +47,7 @@ export interface SessionSummary {
   steps: StepLog[];
 }
 
-export class SessionLogger {
+export class ClawdroidSessionLog {
   private sessionId: string;
   private logDir: string;
   private steps: StepLog[] = [];
@@ -114,6 +115,7 @@ export class SessionLogger {
 
   private buildSummary(completed: boolean): SessionSummary {
     return {
+      meta: { product: CLAWDROID_RUNTIME.productName, schemaVersion: 1 },
       sessionId: this.sessionId,
       goal: this.goal,
       provider: this.provider,
@@ -128,3 +130,6 @@ export class SessionLogger {
     };
   }
 }
+
+/** Backward-compat alias. */
+export const SessionLogger = ClawdroidSessionLog;
