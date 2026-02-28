@@ -58,6 +58,7 @@ It runs fully on-device: no external backend required, works offline, and is des
 
 * `apk/` – original APK(s) and unpacked contents (resources, manifest, DEX, etc.).
 * `agent/` – phone agent (perception → reasoning → action over ADB + LLM); run with Bun, see `agent/README.md`.
+* `agent-scripts/` – shared agent scripts and guardrails ([steipete/agent-scripts](https://github.com/steipete/agent-scripts)).
 * `scripts/` – helper scripts to unpack, inspect, and rebuild the APK.
 * `docs/` – additional technical documentation.
 
