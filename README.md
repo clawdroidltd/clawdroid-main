@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/clawdroid-banner.png" alt="Clawdroid" width="100%">
+</div>
+
 # Clawdroid
 
 <div align="center">
