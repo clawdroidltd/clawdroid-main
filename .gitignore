@@ -2,3 +2,9 @@
 apk/unpacked/
 apk/unpacked-*/
 apk/*-unsigned.apk
+
+# Agent (Bun/Node)
+agent/node_modules/
+agent/.env
+agent/logs/
+agent/dist/

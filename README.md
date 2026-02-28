@@ -57,6 +57,7 @@ It runs fully on-device: no external backend required, works offline, and is des
 > **Note:** This repository currently focuses on the unpacked APK and auxiliary tooling rather than a hand-written Android Studio project. Structure may evolve over time.
 
 * `apk/` – original APK(s) and unpacked contents (resources, manifest, DEX, etc.).
+* `agent/` – phone agent (perception → reasoning → action over ADB + LLM); run with Bun, see `agent/README.md`.
 * `scripts/` – helper scripts to unpack, inspect, and rebuild the APK.
 * `docs/` – additional technical documentation.
 

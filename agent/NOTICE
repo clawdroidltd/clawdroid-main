@@ -1,0 +1,8 @@
+Clawdroid agent
+Copyright (c) Clawdroid contributors
+
+This agent module implements a perception-reasoning-action loop for Android
+automation over ADB. The design and implementation are derived from the
+open-source project droidclaw (https://github.com/unitedbyai/droidclaw),
+which is licensed under the MIT License. We retain the MIT license for this
+module and acknowledge unitedbyai/droidclaw as the original source.
