@@ -1,0 +1,59 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { loadConfig } from "../src/config.js";
+
+function withEnv(vars: Record<string, string | undefined>, fn: () => void | Promise<void>) {
+  const prev: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(vars)) {
+    prev[k] = process.env[k];
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  return Promise.resolve(fn()).finally(() => {
+    for (const [k, v] of Object.entries(prev)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+}
+
+test("loadConfig throws without OPENAI_API_KEY", async () => {
+  await withEnv(
+    {
+      OPENAI_API_KEY: undefined,
+      VOX_AGENT_URL: undefined,
+      VOX_AGENT_CMD: undefined,
+    },
+    () => {
+      assert.throws(() => loadConfig(), /OPENAI_API_KEY/);
+    },
+  );
+});
+
+test("loadConfig rejects VOX_AGENT_URL + VOX_AGENT_CMD together", async () => {
+  await withEnv(
+    {
+      OPENAI_API_KEY: "test",
+      VOX_AGENT_URL: "http://127.0.0.1:7777/query",
+      VOX_AGENT_CMD: "node examples/echo-agent.js",
+    },
+    () => {
+      assert.throws(() => loadConfig(), /VOX_AGENT_URL|VOX_AGENT_CMD/);
+    },
+  );
+});
+
+test("loadConfig parses VOX_PUBLIC_BASE_URL", async () => {
+  await withEnv(
+    {
+      OPENAI_API_KEY: "test",
+      VOX_PUBLIC_BASE_URL: "https://example.com",
+      VOX_AGENT_URL: undefined,
+      VOX_AGENT_CMD: undefined,
+    },
+    () => {
+      const cfg = loadConfig();
+      assert.equal(cfg.publicBaseUrl?.toString(), "https://example.com/");
+    },
+  );
+});
