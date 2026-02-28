@@ -1,0 +1,4 @@
+# Unpacked / rebrand script output
+apk/unpacked/
+apk/unpacked-*/
+apk/*-unsigned.apk

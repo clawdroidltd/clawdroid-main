@@ -47,15 +47,23 @@ It runs fully on-device: no external backend required, works offline, and is des
 
 ---
 
-### Unpacking the APK
+### APK in this repo
 
-Once you place your Clawdroid APK into this repository (for example as `apk/clawdroid.apk`), you can unpack it locally.
+The repository includes `apk/Clawdroid.apk`. To remove the "Made with: Cursor" badge and replace **Nocracy** with **clawdroid**, use the rebrand script (requires [apktool](https://ibotpeaches.github.io/Apktool/)):
+
+```bash
+# Install apktool: brew install apktool
+./scripts/rebrand-apk.sh
+# Then re-sign the output apk/Clawdroid-rebranded-unsigned.apk for installation
+```
+
+### Unpacking the APK
 
 Recommended layout:
 
 ```text
 apk/
-  clawdroid.apk
+  Clawdroid.apk
 ```
 
 Example commands (using common Android reverse engineering tools):
@@ -65,10 +73,10 @@ Example commands (using common Android reverse engineering tools):
 mkdir -p apk/unpacked
 
 # 2. Unpack resources, manifest, smali (if apktool is installed)
-apktool d apk/clawdroid.apk -o apk/unpacked
+apktool d apk/Clawdroid.apk -o apk/unpacked
 
 # 3. (Optional) Also unzip the raw contents
-unzip -d apk/unpacked-zip apk/clawdroid.apk
+unzip -d apk/unpacked-zip apk/Clawdroid.apk
 ```
 
 You can then explore:
@@ -76,8 +84,6 @@ You can then explore:
 * `AndroidManifest.xml`
 * `res/` resources
 * `smali*/` or `classes*.dex` (for code-level inspection)
-
-If you want, we can add more automation around this (e.g. a `scripts/unpack-apk.sh` helper).
 
 ---
 
