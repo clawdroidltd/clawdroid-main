@@ -1,11 +1,12 @@
 /**
- * Session logging for the phone agent.
+ * Session logging for the Clawdroid phone agent.
  * Writes incremental .partial.json after each step (crash-safe),
- * and a final .json summary at session end.
+ * and a final .json summary at session end. Session IDs use Clawdroid log prefix.
  */
 
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
+import { CLAWDROID_RUNTIME } from "./clawdroid-runtime.js";
 import type { ActionDecision } from "./actions.js";
 
 export interface StepLog {
@@ -55,7 +56,7 @@ export class SessionLogger {
   private startTime: string;
 
   constructor(logDir: string, goal: string, provider: string, model: string) {
-    this.sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.sessionId = `${CLAWDROID_RUNTIME.logPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     this.logDir = logDir;
     this.goal = goal;
     this.provider = provider;

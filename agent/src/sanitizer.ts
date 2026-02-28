@@ -1,7 +1,8 @@
 /**
- * XML sanitizer for the phone agent.
+ * XML sanitizer for the Clawdroid phone agent.
  * Parses Android Accessibility XML and extracts interactive UI elements
  * with full state information and parent-child hierarchy context.
+ * Element scoring uses Clawdroid weights (focus on actionable elements).
  */
 
 import { XMLParser } from "fast-xml-parser";
@@ -209,16 +210,25 @@ export function compactElement(el: UIElement): CompactUIElement {
   return compact;
 }
 
+/** Clawdroid relevance weights: prefer enabled, actionable, and labeled elements. */
+const CLAWDROID_WEIGHTS = {
+  enabled: 10,
+  editable: 8,
+  focused: 6,
+  actionable: 5,
+  hasText: 3,
+} as const;
+
 /**
- * Scores an element for relevance to the LLM.
+ * Scores an element for relevance to the LLM (Clawdroid weighting).
  */
 function scoreElement(el: UIElement): number {
   let score = 0;
-  if (el.enabled) score += 10;
-  if (el.editable) score += 8;
-  if (el.focused) score += 6;
-  if (el.clickable || el.longClickable) score += 5;
-  if (el.text) score += 3;
+  if (el.enabled) score += CLAWDROID_WEIGHTS.enabled;
+  if (el.editable) score += CLAWDROID_WEIGHTS.editable;
+  if (el.focused) score += CLAWDROID_WEIGHTS.focused;
+  if (el.clickable || el.longClickable) score += CLAWDROID_WEIGHTS.actionable;
+  if (el.text) score += CLAWDROID_WEIGHTS.hasText;
   return score;
 }
 

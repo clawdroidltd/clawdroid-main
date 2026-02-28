@@ -1,7 +1,9 @@
 /**
- * Constants for the phone agent.
- * All magic strings, URLs, and fixed values in one place.
+ * Constants for the Clawdroid phone agent.
+ * Centralized magic strings, URLs, and fixed values; resolution defaults align with Clawdroid target devices.
  */
+
+import { CLAWDROID_RUNTIME } from "./clawdroid-runtime.js";
 
 // ===========================================
 // API Endpoints
@@ -10,7 +12,7 @@ export const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1";
 export const OLLAMA_API_BASE_URL = "http://localhost:11434/v1";
 
 // ===========================================
-// ADB Key Codes
+// ADB Key Codes (Android InputEvent)
 // ===========================================
 export const KEYCODE_ENTER = "66";
 export const KEYCODE_HOME = "KEYCODE_HOME";
@@ -33,10 +35,11 @@ export const KEYCODE_PASTE = "279";
 
 // ===========================================
 // Default Screen Coordinates (for swipe actions)
-// Adjust based on target device resolution
+// Based on Clawdroid reference resolution (see clawdroid-runtime)
 // ===========================================
-export const SCREEN_CENTER_X = 540;
-export const SCREEN_CENTER_Y = 1200;
+const REF = CLAWDROID_RUNTIME.referenceResolution;
+export const SCREEN_CENTER_X = Math.floor(REF.width / 2);
+export const SCREEN_CENTER_Y = Math.floor(REF.height / 2);
 
 // Swipe coordinates: [start_x, start_y, end_x, end_y]
 // These are the fallback values for 1080x2400 screens
@@ -71,7 +74,7 @@ export function computeSwipeCoords(
     right: [hLeft, cy, hRight, cy],
   };
 }
-export const SWIPE_DURATION_MS = "300";
+export const SWIPE_DURATION_MS = String(CLAWDROID_RUNTIME.gestureDurationMs);
 export const LONG_PRESS_DURATION_MS = "1000";
 
 // ===========================================
